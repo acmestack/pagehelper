@@ -11,9 +11,12 @@ package pagehelper
 import (
     "context"
     "fmt"
+    "github.com/xfali/gobatis/common"
     "github.com/xfali/gobatis/executor"
     "github.com/xfali/gobatis/factory"
+    "github.com/xfali/gobatis/logging"
     "github.com/xfali/gobatis/reflection"
+    "github.com/xfali/gobatis/session"
     "github.com/xfali/gobatis/transaction"
     "strings"
 )
@@ -27,40 +30,82 @@ type PageParam struct {
     PageSize int
 }
 
-func New(f *factory.DefaultFactory) *PageHelperFactory {
-    return &PageHelperFactory{*f}
+func New(f factory.Factory) *Factory {
+    return &Factory{f}
 }
 
-type PageHelperFactory struct {
-    factory.DefaultFactory
+type Factory struct {
+    fac factory.Factory
 }
 
-type PageHelperExecutor struct {
-    executor.SimpleExecutor
+type Executor struct {
+    exec executor.Executor
+    log  logging.LogFunc
 }
 
 func StartPage(page, pageSize int, ctx context.Context) context.Context {
     return context.WithValue(ctx, pageHelperValue, &PageParam{Page: page, PageSize: pageSize})
 }
 
-func (exec *PageHelperExecutor) Query(ctx context.Context, result reflection.Object, sql string, params ...interface{}) error {
+func (exec *Executor) Close(rollback bool) {
+    exec.exec.Close(rollback)
+}
+
+func (exec *Executor) Exec(ctx context.Context, sql string, params ...interface{}) (common.Result, error) {
+    return exec.exec.Exec(ctx, sql, params...)
+}
+
+func (exec *Executor) Begin() error {
+    return exec.exec.Begin()
+}
+
+func (exec *Executor) Commit(require bool) error {
+    return exec.exec.Commit(require)
+}
+
+func (exec *Executor) Rollback(require bool) error {
+    return exec.exec.Rollback(require)
+}
+
+func (exec *Executor) Query(ctx context.Context, result reflection.Object, sql string, params ...interface{}) error {
     p := ctx.Value(pageHelperValue)
     if p != nil {
         if param, ok := p.(*PageParam); ok {
             sql = modifySql(sql, param)
+            exec.log(logging.INFO, "PageHelper Query: [%s]", sql)
         }
     }
 
-    return exec.SimpleExecutor.Query(ctx, result, sql, params...)
+    return exec.exec.Query(ctx, result, sql, params...)
 }
 
-func (f *PageHelperFactory) CreateExecutor(transaction transaction.Transaction) executor.Executor {
-    return &PageHelperExecutor{*executor.NewSimpleExecutor(transaction)}
+func (f *Factory) InitDB() error {
+    return f.fac.InitDB()
+}
+
+func (f *Factory) CreateTransaction() transaction.Transaction {
+    return f.fac.CreateTransaction()
+}
+
+func (f *Factory) CreateSession() session.SqlSession {
+    tx := f.CreateTransaction()
+    return session.NewDefaultSqlSession(f.LogFunc(), tx, f.CreateExecutor(tx), false)
+}
+
+func (f *Factory) LogFunc() logging.LogFunc {
+    return f.fac.LogFunc()
+}
+
+func (f *Factory) CreateExecutor(transaction transaction.Transaction) executor.Executor {
+    return &Executor{
+        exec: executor.NewSimpleExecutor(transaction),
+        log:  f.LogFunc(),
+    }
 }
 
 func modifySql(sql string, p *PageParam) string {
     b := strings.Builder{}
-    b.WriteString(sql)
-    b.WriteString(fmt.Sprintf(" OFFSET %d LIMIT %d ", p.Page*p.PageSize, p.PageSize))
+    b.WriteString(strings.TrimSpace(sql))
+    b.WriteString(fmt.Sprintf(" LIMIT %d, %d ", p.Page*p.PageSize, p.PageSize))
     return b.String()
 }

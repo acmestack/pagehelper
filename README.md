@@ -15,27 +15,27 @@ select查询返回的result还未能携带page、pageSize、total信息，需要
 ### 1、使用pagehelper的Factory生成SessionManager
 
 ```cassandraql
-    fac := factory.DefaultFactory{
-        Host:     "localhost",
-        Port:     3306,
-        DBName:   "test",
-        Username: "root",
-        Password: "123",
-        Charset:  "utf8",
-
-        MaxConn:     1000,
-        MaxIdleConn: 500,
-
-        Log: logging.DefaultLogf,
-    }
-    sessMgr := gobatis.NewSessionManager(pagehelper.New(&fac))
+    pFac := pagehelper.New(&factory.DefaultFactory{
+                                    Host:     "localhost",
+                                    Port:     3306,
+                                    DBName:   "test",
+                                    Username: "root",
+                                    Password: "123",
+                                    Charset:  "utf8",
+                            
+                                    MaxConn:     1000,
+                                    MaxIdleConn: 500,
+                            
+                                    Log: logging.DefaultLogf,
+                                })
+    pFac.InitDB()
+    sessMgr := gobatis.NewSessionManager(pFac)
 ```
 
 ### 2、配置分页参数
 ```cassandraql
     session := sessMgr.NewSession()
-    ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
-    ctx = pagehelper.StartPage(1, 2, ctx)
+    ctx := pagehelper.StartPage(1, 10, context.Background())
 
     var ret []TestTable
     session.SetContext(ctx).Select("SELECT * FROM TBL_TEST").Param().Result(&ret)

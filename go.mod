@@ -1,4 +1,4 @@
-module github/xfali/pagehelper
+module github.com/xfali/pagehelper
 
 go 1.12
 
