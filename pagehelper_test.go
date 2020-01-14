@@ -13,6 +13,7 @@ import (
     "github.com/xfali/gobatis"
     "github.com/xfali/gobatis/factory"
     "github.com/xfali/gobatis/logging"
+    "strings"
     "testing"
     "time"
 )
@@ -25,17 +26,76 @@ type TestTable struct {
 }
 
 func TestPageHelper(t *testing.T) {
-    ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
-    ctx = StartPage(1, 2, ctx)
+    t.Run("StartPage", func(t *testing.T) {
+        ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+        ctx = StartPage(1, 2, ctx)
 
-    p := ctx.Value(pageHelperValue)
-    printV(t, p)
+        p := ctx.Value(pageHelperValue)
+        printPage(t, p)
 
-    select {
-    case <-ctx.Done():
-        break
-    }
-    printV(t, p)
+        select {
+        case <-ctx.Done():
+            break
+        }
+        printPage(t, p)
+    })
+
+    t.Run("OrderBy", func(t *testing.T) {
+        ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+        ctx = OrderBy("test", ASC, ctx)
+
+        p := ctx.Value(orderHelperValue)
+        printOrder(t, p)
+
+        select {
+        case <-ctx.Done():
+            break
+        }
+        printOrder(t, p)
+    })
+
+    t.Run("PageHelper and OrderBy", func(t *testing.T) {
+        ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+        ctx = OrderBy("test", ASC, ctx)
+        ctx = StartPage(1, 2, ctx)
+
+        o := ctx.Value(orderHelperValue)
+        printOrder(t, o)
+
+        p := ctx.Value(pageHelperValue)
+        printPage(t, p)
+
+        select {
+        case <-ctx.Done():
+            break
+        }
+        printPage(t, p)
+        printOrder(t, o)
+    })
+
+    t.Run("complex", func(t *testing.T) {
+        ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+        ctx = OrderBy("test", ASC, ctx)
+        ctx = StartPage(1, 2, ctx)
+        ctx = StartPage(3, 10, ctx)
+        ctx = OrderBy("tat", DESC, ctx)
+        ctx, _ = context.WithTimeout(ctx, time.Second)
+
+        now := time.Now()
+        o := ctx.Value(orderHelperValue)
+        printOrder(t, o)
+        t.Logf("time :%d ms \n", time.Since(now)/time.Millisecond)
+
+        p := ctx.Value(pageHelperValue)
+        printPage(t, p)
+
+        select {
+        case <-ctx.Done():
+            break
+        }
+        printPage(t, p)
+        printOrder(t, o)
+    })
 }
 
 func TestPageHelper2(t *testing.T) {
@@ -63,14 +123,56 @@ func TestPageHelper2(t *testing.T) {
     session.Select("SELECT * FROM TBL_TEST").Param().Result(&ret)
 }
 
-func TestModify(t *testing.T) {
+func TestModifyPage(t *testing.T) {
     sql := modifySql("select * from x", &PageParam{1, 2})
     t.Log(sql)
 }
 
-func printV(t *testing.T, p interface{}) {
+func order(sql string, params ...interface{}) (string, []interface{}) {
+    return modifySqlOrder(sql, &OrderParam{"test", ASC}, params)
+}
+
+func TestModifyOrder(t *testing.T) {
+    sql, p := order("select ? from x", "field1")
+    t.Log(sql)
+    if len(p) != 2 {
+        t.Fatal()
+    }
+    for _, v := range p {
+        t.Log(v)
+    }
+}
+
+func TestModifyOrderAndPage(t *testing.T) {
+    sql, p := order("select ? from x", "field1")
+    t.Log(sql)
+    if len(p) != 2 {
+        t.Fatal()
+    }
+
+    sql = modifySql(sql, &PageParam{1, 2})
+
+    t.Log(sql)
+    for _, v := range p {
+        t.Log(v)
+    }
+
+    if strings.TrimSpace(sql) != "select ? from x ORDER BY ? ASC LIMIT 2, 2" {
+        t.Fail()
+    }
+}
+
+func printPage(t *testing.T, p interface{}) {
     if p, ok := p.(*PageParam); ok {
-        t.Logf("param: %d %d", p.Page, p.PageSize)
+        t.Logf("page param: %d %d", p.Page, p.PageSize)
+    } else {
+        t.Fail()
+    }
+}
+
+func printOrder(t *testing.T, p interface{}) {
+    if p, ok := p.(*OrderParam); ok {
+        t.Logf("order param: %s %s", p.Field, p.Order)
     } else {
         t.Fail()
     }

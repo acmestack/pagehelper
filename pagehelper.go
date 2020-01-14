@@ -22,8 +22,17 @@ import (
 )
 
 const (
-    pageHelperValue = "_page_helper_value"
+    pageHelperValue  = "_page_helper_value"
+    orderHelperValue = "_order_helper_value"
+
+    ASC  = "ASC"
+    DESC = "DESC"
 )
+
+type OrderParam struct {
+    Field string
+    Order string
+}
 
 type PageParam struct {
     Page     int
@@ -47,6 +56,10 @@ func StartPage(page, pageSize int, ctx context.Context) context.Context {
     return context.WithValue(ctx, pageHelperValue, &PageParam{Page: page, PageSize: pageSize})
 }
 
+func OrderBy(field, order string, ctx context.Context) context.Context {
+    return context.WithValue(ctx, orderHelperValue, &OrderParam{Field: field, Order: order})
+}
+
 func (exec *Executor) Close(rollback bool) {
     exec.exec.Close(rollback)
 }
@@ -68,14 +81,20 @@ func (exec *Executor) Rollback(require bool) error {
 }
 
 func (exec *Executor) Query(ctx context.Context, result reflection.Object, sql string, params ...interface{}) error {
+    o := ctx.Value(orderHelperValue)
+    if o != nil {
+        if param, ok := o.(*OrderParam); ok {
+            sql, params = modifySqlOrder(sql, param, params)
+        }
+    }
+
     p := ctx.Value(pageHelperValue)
     if p != nil {
         if param, ok := p.(*PageParam); ok {
             sql = modifySql(sql, param)
-            exec.log(logging.INFO, "PageHelper Query: [%s]", sql)
         }
     }
-
+    exec.log(logging.DEBUG, "PageHelper Query: [%s], params: %s\n", sql, fmt.Sprint(params))
     return exec.exec.Query(ctx, result, sql, params...)
 }
 
@@ -101,6 +120,17 @@ func (f *Factory) CreateExecutor(transaction transaction.Transaction) executor.E
         exec: executor.NewSimpleExecutor(transaction),
         log:  f.LogFunc(),
     }
+}
+
+func modifySqlOrder(sql string, p *OrderParam, params []interface{}) (string, []interface{}) {
+    if p.Field == "" {
+        return sql, params
+    }
+    b := strings.Builder{}
+    b.WriteString(strings.TrimSpace(sql))
+    b.WriteString(fmt.Sprintf(" ORDER BY ? %s ", p.Order))
+    params = append(params, p.Field)
+    return b.String(), params
 }
 
 func modifySql(sql string, p *PageParam) string {
