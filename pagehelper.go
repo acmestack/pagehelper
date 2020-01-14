@@ -52,10 +52,18 @@ type Executor struct {
     log  logging.LogFunc
 }
 
+//分页
+//page 页码
+//pageSize 分页大小
+//ctx 初始context
 func StartPage(page, pageSize int, ctx context.Context) context.Context {
     return context.WithValue(ctx, pageHelperValue, &PageParam{Page: page, PageSize: pageSize})
 }
 
+//排序
+//field 字段
+//order 排序 [ASC | DESC]
+//ctx 初始context
 func OrderBy(field, order string, ctx context.Context) context.Context {
     return context.WithValue(ctx, orderHelperValue, &OrderParam{Field: field, Order: order})
 }
@@ -84,7 +92,7 @@ func (exec *Executor) Query(ctx context.Context, result reflection.Object, sql s
     o := ctx.Value(orderHelperValue)
     if o != nil {
         if param, ok := o.(*OrderParam); ok {
-            sql, params = modifySqlOrder(sql, param, params)
+            sql = modifySqlOrder(sql, param)
         }
     }
 
@@ -122,15 +130,14 @@ func (f *Factory) CreateExecutor(transaction transaction.Transaction) executor.E
     }
 }
 
-func modifySqlOrder(sql string, p *OrderParam, params []interface{}) (string, []interface{}) {
+func modifySqlOrder(sql string, p *OrderParam) string {
     if p.Field == "" {
-        return sql, params
+        return sql
     }
     b := strings.Builder{}
     b.WriteString(strings.TrimSpace(sql))
-    b.WriteString(fmt.Sprintf(" ORDER BY ? %s ", p.Order))
-    params = append(params, p.Field)
-    return b.String(), params
+    b.WriteString(fmt.Sprintf(" ORDER BY `%s` %s ", p.Field, p.Order))
+    return b.String()
 }
 
 func modifySql(sql string, p *PageParam) string {

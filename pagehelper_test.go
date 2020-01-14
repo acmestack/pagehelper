@@ -129,7 +129,7 @@ func TestModifyPage(t *testing.T) {
 }
 
 func order(sql string, params ...interface{}) (string, []interface{}) {
-    return modifySqlOrder(sql, &OrderParam{"test", ASC}, params)
+    return modifySqlOrder(sql, &OrderParam{"test", ASC}), params
 }
 
 func TestModifyOrder(t *testing.T) {

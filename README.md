@@ -40,3 +40,33 @@ select查询返回的result还未能携带page、pageSize、total信息，需要
     var ret []TestTable
     session.SetContext(ctx).Select("SELECT * FROM TBL_TEST").Param().Result(&ret)
 ```
+
+### 3、配置排序参数
+```cassandraql
+    session := sessMgr.NewSession()
+    ctx := pagehelper.OrderBy("myfield", pagehelper.DESC, context.Background())
+
+    var ret []TestTable
+    session.SetContext(ctx).Select("SELECT * FROM TBL_TEST").Param().Result(&ret)
+```
+*注意:*
+  
+由于golang对order by不能使用placeholder的方式，所以存在注入风险，请谨慎使用排序功能，如果使用，则需要自己做防注入的工作。
+
+举例：
+
+在获得order by参数时做参数校验
+```$xslt
+valid := regexp.MustCompile("^[A-Za-z0-9_]+$")
+if !valid.MatchString(ordCol) {
+    // invalid column name, do not proceed in order to prevent SQL injection
+}
+```
+
+### 4、使用builder
+```$xslt
+session := sessMgr.NewSession()
+ctx := pagehelper.C(context.Background()).Page(1, 3).Order("test", pagehelper.ASC).Build()
+var ret []TestTable
+session.SetContext(ctx).Select("SELECT * FROM TBL_TEST").Param().Result(&ret)
+```
