@@ -61,8 +61,8 @@ v0.1.0已添加此特性 ：返回总记录数
 输出：
 ```$xslt
 pageNum:        1 
-GetPages:       101 
-GetPageSize:    10 
+totalPage:      101 
+pageSize:       10 
 total:          1001
 ```
 *注意：*
