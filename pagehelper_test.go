@@ -124,7 +124,7 @@ func TestPageHelper2(t *testing.T) {
 }
 
 func TestModifyPage(t *testing.T) {
-    sql := PageModifier("select * from x", &PageParam{1, 2, false})
+    sql := PageModifier("select * from x", &PageParam{Page: 1, PageSize: 2,})
     t.Log(sql)
     if strings.TrimSpace(sql) != `select * from x LIMIT 2, 2` {
         t.Fail()
@@ -148,20 +148,30 @@ func TestModifyOrder(t *testing.T) {
 }
 
 func TestModifyCount(t *testing.T) {
-    sql := CountModifier("select ? from x")
-    t.Log(sql)
+    t.Run("empty", func(t *testing.T) {
+        sql := CountModifier("select ? from x", "")
+        t.Log(sql)
 
-    if strings.TrimSpace(sql) != "SELECT COUNT(0) FROM (select ? from x)" {
-        t.Fail()
-    }
+        if strings.TrimSpace(sql) != "SELECT COUNT(0) FROM (select ? from x) AS __hp_tempCountTl" {
+            t.Fail()
+        }
+    })
+
+    t.Run("test", func(t *testing.T) {
+        sql := CountModifier("select ? from x", "test")
+        t.Log(sql)
+
+        if strings.TrimSpace(sql) != "SELECT COUNT(`test`) FROM (select ? from x) AS __hp_tempCountTl" {
+            t.Fail()
+        }
+    })
 }
 
-
 func TestChangeModifyCount(t *testing.T) {
-    CountModifier = func(sql string) string {
+    CountModifier = func(sql, c string) string {
         return "test " + sql
     }
-    sql := CountModifier("select ? from x")
+    sql := CountModifier("select ? from x", "")
     t.Log(sql)
 
     if strings.TrimSpace(sql) != "test select ? from x" {
@@ -185,7 +195,7 @@ func TestModifyOrderAndPage(t *testing.T) {
     sql, p := order("select ? from x", "field1")
     t.Log(sql)
 
-    sql = PageModifier(sql, &PageParam{1, 2, false})
+    sql = PageModifier(sql, &PageParam{Page: 1, PageSize: 2,})
 
     t.Log(sql)
     for _, v := range p {

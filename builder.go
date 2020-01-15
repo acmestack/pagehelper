@@ -29,8 +29,8 @@ func (b *builder) Page(page, pageSize int) *builder {
 //分页
 //page 页码
 //pageSize 分页大小
-func (b *builder) PageWithTotal(page, pageSize int) *builder {
-    b.ctx = StartPageWithTotal(page, pageSize, b.ctx)
+func (b *builder) PageWithTotal(page, pageSize int, countColumn string) *builder {
+    b.ctx = StartPageWithTotal(page, pageSize, countColumn, b.ctx)
     return b
 }
 

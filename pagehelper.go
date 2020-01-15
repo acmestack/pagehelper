@@ -25,7 +25,6 @@ import (
 const (
     pageHelperValue  = "_page_helper_value"
     orderHelperValue = "_order_helper_value"
-    totalHelperValue = "_total_helper_value"
 
     ASC  = "ASC"
     DESC = "DESC"
@@ -46,7 +45,8 @@ type PageParam struct {
     Page     int
     PageSize int
 
-    total bool
+    countColumn string
+    total       int64
 }
 
 func New(f factory.Factory) *Factory {
@@ -57,10 +57,10 @@ func GetTotal(ctx context.Context) int64 {
     if ctx == nil {
         return 0
     }
-    p := ctx.Value(totalHelperValue)
+    p := ctx.Value(pageHelperValue)
     if p != nil {
-        if t, ok := p.(int64); ok {
-            return t
+        if param, ok := p.(*PageParam); ok {
+            return param.total
         }
     }
     return 0
@@ -80,15 +80,15 @@ type Executor struct {
 //pageSize 分页大小
 //ctx 初始context
 func StartPage(page, pageSize int, ctx context.Context) context.Context {
-    return context.WithValue(ctx, pageHelperValue, &PageParam{Page: page, PageSize: pageSize, total: false})
+    return context.WithValue(ctx, pageHelperValue, &PageParam{Page: page, PageSize: pageSize, total: 0})
 }
 
 //分页(包含total信息)
 //page 页码
 //pageSize 分页大小
 //ctx 初始context
-func StartPageWithTotal(page, pageSize int, ctx context.Context) context.Context {
-    return context.WithValue(ctx, pageHelperValue, &PageParam{Page: page, PageSize: pageSize, total: true})
+func StartPageWithTotal(page, pageSize int, countColumn string, ctx context.Context) context.Context {
+    return context.WithValue(ctx, pageHelperValue, &PageParam{Page: page, PageSize: pageSize, total: -1, countColumn: countColumn})
 }
 
 //排序
@@ -132,9 +132,8 @@ func (exec *Executor) Query(ctx context.Context, result reflection.Object, sql s
     if p != nil {
         if param, ok := p.(*PageParam); ok {
             sql = PageModifier(sql, param)
-            if param.total == true {
-                total := exec.getTotal(ctx, originSql, params...)
-                ctx = context.WithValue(ctx, totalHelperValue, total)
+            if param.total == -1 {
+                param.total = exec.getTotal(ctx, originSql, param.countColumn, params...)
             }
         }
     }
@@ -183,8 +182,8 @@ func modifyPageSql(sql string, p *PageParam) string {
     return b.String()
 }
 
-func (exec *Executor) getTotal(ctx context.Context, sql string, params ...interface{}) int64 {
-    totalSql := CountModifier(sql)
+func (exec *Executor) getTotal(ctx context.Context, sql, countColumn string, params ...interface{}) int64 {
+    totalSql := CountModifier(sql, countColumn)
     var total int64
     obj, err := gobatis.ParseObject(&total)
     if err == nil {
@@ -194,10 +193,15 @@ func (exec *Executor) getTotal(ctx context.Context, sql string, params ...interf
     return 0
 }
 
-func modifyCountSql(sql string) string {
+func modifyCountSql(sql, countColumn string) string {
+    if countColumn == "" {
+        countColumn = "0"
+    }
     b := strings.Builder{}
-    b.WriteString("SELECT COUNT(0) FROM (")
-    b.WriteString(sql)
-    b.WriteString(")")
+    b.WriteString("SELECT COUNT(`")
+    b.WriteString(countColumn)
+    b.WriteString("`) FROM (")
+    b.WriteString(strings.TrimSpace(sql))
+    b.WriteString(") AS __hp_tempCountTl")
     return b.String()
 }
