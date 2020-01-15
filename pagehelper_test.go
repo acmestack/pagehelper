@@ -124,40 +124,75 @@ func TestPageHelper2(t *testing.T) {
 }
 
 func TestModifyPage(t *testing.T) {
-    sql := modifySql("select * from x", &PageParam{1, 2})
+    sql := PageModifier("select * from x", &PageParam{1, 2, false})
     t.Log(sql)
+    if strings.TrimSpace(sql) != `select * from x LIMIT 2, 2` {
+        t.Fail()
+    }
 }
 
 func order(sql string, params ...interface{}) (string, []interface{}) {
-    return modifySqlOrder(sql, &OrderParam{"test", ASC}), params
+    return OrderByModifier(sql, &OrderParam{"test", ASC}), params
 }
 
 func TestModifyOrder(t *testing.T) {
     sql, p := order("select ? from x", "field1")
     t.Log(sql)
-    if len(p) != 2 {
-        t.Fatal()
-    }
     for _, v := range p {
         t.Log(v)
+    }
+
+    if strings.TrimSpace(sql) != "select ? from x ORDER BY `test` ASC" {
+        t.Fail()
+    }
+}
+
+func TestModifyCount(t *testing.T) {
+    sql := CountModifier("select ? from x")
+    t.Log(sql)
+
+    if strings.TrimSpace(sql) != "SELECT COUNT(0) FROM (select ? from x)" {
+        t.Fail()
+    }
+}
+
+
+func TestChangeModifyCount(t *testing.T) {
+    CountModifier = func(sql string) string {
+        return "test " + sql
+    }
+    sql := CountModifier("select ? from x")
+    t.Log(sql)
+
+    if strings.TrimSpace(sql) != "test select ? from x" {
+        t.Fail()
+    }
+}
+
+func TestGetTotal(t *testing.T) {
+    ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+    ctx = OrderBy("test", ASC, ctx)
+    ctx = StartPage(1, 2, ctx)
+
+    total := GetTotal(ctx)
+    t.Log(total)
+    if total != 0 {
+        t.Fail()
     }
 }
 
 func TestModifyOrderAndPage(t *testing.T) {
     sql, p := order("select ? from x", "field1")
     t.Log(sql)
-    if len(p) != 2 {
-        t.Fatal()
-    }
 
-    sql = modifySql(sql, &PageParam{1, 2})
+    sql = PageModifier(sql, &PageParam{1, 2, false})
 
     t.Log(sql)
     for _, v := range p {
         t.Log(v)
     }
 
-    if strings.TrimSpace(sql) != "select ? from x ORDER BY ? ASC LIMIT 2, 2" {
+    if strings.TrimSpace(sql) != "select ? from x ORDER BY `test` ASC LIMIT 2, 2" {
         t.Fail()
     }
 }

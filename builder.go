@@ -26,6 +26,14 @@ func (b *builder) Page(page, pageSize int) *builder {
     return b
 }
 
+//分页
+//page 页码
+//pageSize 分页大小
+func (b *builder) PageWithTotal(page, pageSize int) *builder {
+    b.ctx = StartPageWithTotal(page, pageSize, b.ctx)
+    return b
+}
+
 //手动指定字段和排序
 //field 字段
 //order 排序 [ASC | DESC]
