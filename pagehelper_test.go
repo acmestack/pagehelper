@@ -28,7 +28,7 @@ type TestTable struct {
 func TestPageHelper(t *testing.T) {
     t.Run("StartPage", func(t *testing.T) {
         ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
-        ctx = StartPage(1, 2, ctx)
+        ctx = StartPage(ctx, 1, 2)
 
         p := ctx.Value(pageHelperValue)
         printPage(t, p)
@@ -42,7 +42,7 @@ func TestPageHelper(t *testing.T) {
 
     t.Run("OrderBy", func(t *testing.T) {
         ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
-        ctx = OrderBy("test", ASC, ctx)
+        ctx = OrderBy(ctx, "test", ASC)
 
         p := ctx.Value(orderHelperValue)
         printOrder(t, p)
@@ -56,8 +56,8 @@ func TestPageHelper(t *testing.T) {
 
     t.Run("PageHelper and OrderBy", func(t *testing.T) {
         ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
-        ctx = OrderBy("test", ASC, ctx)
-        ctx = StartPage(1, 2, ctx)
+        ctx = OrderBy(ctx, "test", ASC)
+        ctx = StartPage(ctx, 1, 2)
 
         o := ctx.Value(orderHelperValue)
         printOrder(t, o)
@@ -75,10 +75,10 @@ func TestPageHelper(t *testing.T) {
 
     t.Run("complex", func(t *testing.T) {
         ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
-        ctx = OrderBy("test", ASC, ctx)
-        ctx = StartPage(1, 2, ctx)
-        ctx = StartPage(3, 10, ctx)
-        ctx = OrderBy("tat", DESC, ctx)
+        ctx = OrderBy(ctx, "test", ASC)
+        ctx = StartPage(ctx, 1, 2)
+        ctx = StartPage(ctx, 3, 10)
+        ctx = OrderBy(ctx, "tat", DESC)
         ctx, _ = context.WithTimeout(ctx, time.Second)
 
         now := time.Now()
@@ -115,7 +115,7 @@ func TestPageHelper2(t *testing.T) {
     sessMgr := gobatis.NewSessionManager(New(&fac))
     session := sessMgr.NewSession()
     ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
-    ctx = StartPage(1, 2, ctx)
+    ctx = StartPage(ctx, 1, 2)
 
     session.SetContext(ctx)
 
@@ -124,7 +124,7 @@ func TestPageHelper2(t *testing.T) {
 }
 
 func TestModifyPage(t *testing.T) {
-    sql := PageModifier("select * from x", &PageParam{Page: 1, PageSize: 2,})
+    sql := PageModifier("select * from x", &PageInfo{Page: 1, PageSize: 2,})
     t.Log(sql)
     if strings.TrimSpace(sql) != `select * from x LIMIT 2, 2` {
         t.Fail()
@@ -132,7 +132,7 @@ func TestModifyPage(t *testing.T) {
 }
 
 func order(sql string, params ...interface{}) (string, []interface{}) {
-    return OrderByModifier(sql, &OrderParam{"test", ASC}), params
+    return OrderByModifier(sql, &OrderByInfo{"test", ASC}), params
 }
 
 func TestModifyOrder(t *testing.T) {
@@ -181,8 +181,8 @@ func TestChangeModifyCount(t *testing.T) {
 
 func TestGetTotal(t *testing.T) {
     ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
-    ctx = OrderBy("test", ASC, ctx)
-    ctx = StartPage(1, 2, ctx)
+    ctx = OrderBy(ctx, "test", ASC)
+    ctx = StartPage(ctx, 1, 2)
 
     total := GetTotal(ctx)
     t.Log(total)
@@ -191,11 +191,28 @@ func TestGetTotal(t *testing.T) {
     }
 }
 
+func TestGetPageInfo(t *testing.T) {
+    ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+    ctx = OrderBy(ctx, "test", ASC)
+    ctx = StartPage(ctx, 1, 10)
+
+    pageInfo := GetPageInfo(ctx)
+    pageInfo.total = 1001
+    t.Log(
+        "pageNum: ", pageInfo.GetPageNum(),
+        "totalPage: ", pageInfo.GetTotalPage(),
+        "pageSize: ", pageInfo.GetPageSize(),
+        "total: ", pageInfo.GetTotal())
+    if pageInfo.GetTotalPage() != 101 {
+        t.Fail()
+    }
+}
+
 func TestModifyOrderAndPage(t *testing.T) {
     sql, p := order("select ? from x", "field1")
     t.Log(sql)
 
-    sql = PageModifier(sql, &PageParam{Page: 1, PageSize: 2,})
+    sql = PageModifier(sql, &PageInfo{Page: 1, PageSize: 2,})
 
     t.Log(sql)
     for _, v := range p {
@@ -208,7 +225,7 @@ func TestModifyOrderAndPage(t *testing.T) {
 }
 
 func printPage(t *testing.T, p interface{}) {
-    if p, ok := p.(*PageParam); ok {
+    if p, ok := p.(*PageInfo); ok {
         t.Logf("page param: %d %d", p.Page, p.PageSize)
     } else {
         t.Fail()
@@ -216,7 +233,7 @@ func printPage(t *testing.T, p interface{}) {
 }
 
 func printOrder(t *testing.T, p interface{}) {
-    if p, ok := p.(*OrderParam); ok {
+    if p, ok := p.(*OrderByInfo); ok {
         t.Logf("order param: %s %s", p.Field, p.Order)
     } else {
         t.Fail()

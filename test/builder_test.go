@@ -29,7 +29,7 @@ func TestBuilder(t *testing.T) {
 }
 
 func TestBuilder2(t *testing.T) {
-    ctx := pagehelper.C(context.Background()).Page(1, 3).Order("test", pagehelper.ASC).Build()
+    ctx := pagehelper.C(context.Background()).PageWithCount(1, 3, "").Order("test", pagehelper.ASC).Build()
     ctx = pagehelper.C(ctx).DESC("new_field").Build()
     ctx, _ = context.WithTimeout(ctx, time.Second)
     p := ctx.Value(pageHelperValue)
@@ -39,8 +39,19 @@ func TestBuilder2(t *testing.T) {
     printPage(t, p)
 }
 
+func TestBuilder3(t *testing.T) {
+    ctx := pagehelper.C(context.Background()).Page(1, 3).Order("test", pagehelper.ASC).Build()
+    ctx = pagehelper.C(ctx).DESC("new_field").ASC("new_field2").Total("test").Page(2,100).Build()
+    ctx, _ = context.WithTimeout(ctx, time.Second)
+    p := ctx.Value(pageHelperValue)
+    o := ctx.Value(orderHelperValue)
+
+    printOrder(t, o)
+    printPage(t, p)
+}
+
 func printPage(t *testing.T, p interface{}) {
-    if p, ok := p.(*pagehelper.PageParam); ok {
+    if p, ok := p.(*pagehelper.PageInfo); ok {
         t.Logf("page param: %d %d", p.Page, p.PageSize)
     } else {
         t.Fail()
@@ -48,7 +59,7 @@ func printPage(t *testing.T, p interface{}) {
 }
 
 func printOrder(t *testing.T, p interface{}) {
-    if p, ok := p.(*pagehelper.OrderParam); ok {
+    if p, ok := p.(*pagehelper.OrderByInfo); ok {
         t.Logf("order param: %s %s", p.Field, p.Order)
     } else {
         t.Fail()
