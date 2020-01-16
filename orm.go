@@ -93,6 +93,10 @@ func (f *Factory) InitDB() error {
     return f.fac.InitDB()
 }
 
+func (f *Factory) Close() error {
+    return f.fac.Close()
+}
+
 func (f *Factory) CreateTransaction() transaction.Transaction {
     return f.fac.CreateTransaction()
 }

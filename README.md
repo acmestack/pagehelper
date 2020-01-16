@@ -15,20 +15,17 @@ v0.1.0已添加此特性 ：返回总记录数
 ### 1、使用pagehelper的Factory生成SessionManager
 
 ```cassandraql
-    pFac := pagehelper.New(&factory.DefaultFactory{
-                                    Host:     "localhost",
-                                    Port:     3306,
-                                    DBName:   "test",
-                                    Username: "root",
-                                    Password: "123",
-                                    Charset:  "utf8",
-                            
-                                    MaxConn:     1000,
-                                    MaxIdleConn: 500,
-                            
-                                    Log: logging.DefaultLogf,
-                                })
-    pFac.InitDB()
+    pFac := pagehelper.New(gobatis.NewFactory(
+                           		gobatis.SetMaxConn(100),
+                           		gobatis.SetMaxIdleConn(50),
+                           		gobatis.SetDataSource(&datasource.MysqlDataSource{
+                           			Host:     "localhost",
+                           			Port:     3306,
+                           			DBName:   "test",
+                           			Username: "root",
+                           			Password: "123",
+                           			Charset:  "utf8",
+                           		})))
     sessMgr := gobatis.NewSessionManager(pFac)
 ```
 

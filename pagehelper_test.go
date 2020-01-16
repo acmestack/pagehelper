@@ -11,8 +11,7 @@ package pagehelper
 import (
     "context"
     "github.com/xfali/gobatis"
-    "github.com/xfali/gobatis/factory"
-    "github.com/xfali/gobatis/logging"
+    "github.com/xfali/gobatis/datasource"
     "strings"
     "testing"
     "time"
@@ -99,20 +98,18 @@ func TestPageHelper(t *testing.T) {
 }
 
 func TestPageHelper2(t *testing.T) {
-    fac := factory.DefaultFactory{
-        Host:     "localhost",
-        Port:     3306,
-        DBName:   "test",
-        Username: "root",
-        Password: "123",
-        Charset:  "utf8",
-
-        MaxConn:     1000,
-        MaxIdleConn: 500,
-
-        Log: logging.DefaultLogf,
-    }
-    sessMgr := gobatis.NewSessionManager(New(&fac))
+    pFac := New(gobatis.NewFactory(
+        gobatis.SetMaxConn(100),
+        gobatis.SetMaxIdleConn(50),
+        gobatis.SetDataSource(&datasource.MysqlDataSource{
+            Host:     "localhost",
+            Port:     3306,
+            DBName:   "test",
+            Username: "root",
+            Password: "123",
+            Charset:  "utf8",
+        })))
+    sessMgr := gobatis.NewSessionManager(pFac)
     session := sessMgr.NewSession()
     ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
     ctx = StartPage(ctx, 1, 2)
