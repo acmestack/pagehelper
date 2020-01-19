@@ -4,3 +4,5 @@ github.com/xfali/gobatis v0.0.4 h1:rBR8m18xMQAL58jDIr+i9zj8RYC+Mfa9rOw4ZB3shf0=
 github.com/xfali/gobatis v0.0.4/go.mod h1:hXP3PcXMSYpYFHQejG04qQjSQJtrt8jWpslftkUMBrg=
 github.com/xfali/gobatis v0.0.5 h1:JFpkn0Gihxocc3ZXqKRv4p5q1JiIeRanL0rTdZRZX0Q=
 github.com/xfali/gobatis v0.0.5/go.mod h1:nAml9g3T+vn1qDF5nLzSQM9t4l9Fu56GYQ33bYp5Mok=
+github.com/xfali/gobatis v0.1.1 h1:2F1q6bylWG9bc05/OApDGSSrocT/lKrO1U0WclvgcU0=
+github.com/xfali/gobatis v0.1.1/go.mod h1:nAml9g3T+vn1qDF5nLzSQM9t4l9Fu56GYQ33bYp5Mok=

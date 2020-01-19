@@ -11,6 +11,7 @@ import (
     "fmt"
     "github.com/xfali/gobatis"
     "github.com/xfali/gobatis/common"
+    "github.com/xfali/gobatis/datasource"
     "github.com/xfali/gobatis/executor"
     "github.com/xfali/gobatis/factory"
     "github.com/xfali/gobatis/logging"
@@ -84,12 +85,16 @@ func (exec *Executor) Query(ctx context.Context, result reflection.Object, sql s
     return exec.exec.Query(ctx, result, sql, params...)
 }
 
-func (f *Factory) InitDB() error {
-    return f.fac.InitDB()
+func (f *Factory) Open(source datasource.DataSource) error {
+    return f.fac.Open(source)
 }
 
 func (f *Factory) Close() error {
     return f.fac.Close()
+}
+
+func (f *Factory) GetDataSource() datasource.DataSource {
+    return f.fac.GetDataSource()
 }
 
 func (f *Factory) CreateTransaction() transaction.Transaction {
@@ -106,13 +111,10 @@ func (f *Factory) LogFunc() logging.LogFunc {
 }
 
 func (f *Factory) CreateExecutor(transaction transaction.Transaction) executor.Executor {
-    driver := ""
-    if defaultFac, ok := f.fac.(*factory.DefaultFactory); ok {
-        driver = defaultFac.DataSource.DriverName()
-    }
+    driver := f.fac.GetDataSource().DriverName()
 
     return &Executor{
-        exec:     executor.NewSimpleExecutor(transaction),
+        exec:     f.fac.CreateExecutor(transaction),
         log:      f.LogFunc(),
         modifier: SelectModifier(driver),
     }
