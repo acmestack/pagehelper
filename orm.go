@@ -17,7 +17,6 @@ import (
     "github.com/xfali/gobatis/reflection"
     "github.com/xfali/gobatis/session"
     "github.com/xfali/gobatis/transaction"
-    "strings"
 )
 
 const (
@@ -28,12 +27,6 @@ const (
     DESC = "DESC"
 )
 
-var (
-    OrderByModifier = modifyOrderSql
-    PageModifier    = modifyPageSql
-    CountModifier   = modifyCountSql
-)
-
 type Factory struct {
     fac factory.Factory
 }
@@ -41,6 +34,8 @@ type Factory struct {
 type Executor struct {
     exec executor.Executor
     log  logging.LogFunc
+
+    modifier Modifier
 }
 
 func New(f factory.Factory) *Factory {
@@ -72,14 +67,14 @@ func (exec *Executor) Query(ctx context.Context, result reflection.Object, sql s
     o := ctx.Value(orderHelperValue)
     if o != nil {
         if param, ok := o.(*OrderByInfo); ok {
-            sql = OrderByModifier(sql, param)
+            sql = exec.modifier.OrderBy(sql, param)
         }
     }
 
     p := ctx.Value(pageHelperValue)
     if p != nil {
         if param, ok := p.(*PageInfo); ok {
-            sql = PageModifier(sql, param)
+            sql = exec.modifier.Page(sql, param)
             if param.total == -1 {
                 param.total = exec.getTotal(ctx, originSql, param.countColumn, params...)
             }
@@ -111,31 +106,20 @@ func (f *Factory) LogFunc() logging.LogFunc {
 }
 
 func (f *Factory) CreateExecutor(transaction transaction.Transaction) executor.Executor {
+    driver := ""
+    if defaultFac, ok := f.fac.(*factory.DefaultFactory); ok {
+        driver = defaultFac.DataSource.DriverName()
+    }
+
     return &Executor{
-        exec: executor.NewSimpleExecutor(transaction),
-        log:  f.LogFunc(),
+        exec:     executor.NewSimpleExecutor(transaction),
+        log:      f.LogFunc(),
+        modifier: SelectModifier(driver),
     }
-}
-
-func modifyOrderSql(sql string, p *OrderByInfo) string {
-    if p.Field == "" {
-        return sql
-    }
-    b := strings.Builder{}
-    b.WriteString(strings.TrimSpace(sql))
-    b.WriteString(fmt.Sprintf(" ORDER BY `%s` %s ", p.Field, p.Order))
-    return b.String()
-}
-
-func modifyPageSql(sql string, p *PageInfo) string {
-    b := strings.Builder{}
-    b.WriteString(strings.TrimSpace(sql))
-    b.WriteString(fmt.Sprintf(" LIMIT %d, %d ", p.Page*p.PageSize, p.PageSize))
-    return b.String()
 }
 
 func (exec *Executor) getTotal(ctx context.Context, sql, countColumn string, params ...interface{}) int64 {
-    totalSql := CountModifier(sql, countColumn)
+    totalSql := exec.modifier.Count(sql, countColumn)
     var total int64
     obj, err := gobatis.ParseObject(&total)
     if err == nil {
@@ -145,17 +129,23 @@ func (exec *Executor) getTotal(ctx context.Context, sql, countColumn string, par
     return 0
 }
 
-func modifyCountSql(sql, countColumn string) string {
-    if countColumn == "" {
-        countColumn = "0"
-    } else {
-        countColumn = "`" + countColumn + "`"
+var modifierMap = map[string]Modifier{
+    DriverDummy:     DummyModifier,
+    DriverMysql:     MysqlModifier,
+    DriverOracle:    OracleModifier,
+    DriverPostgre:   PostgreModifier,
+    DriverSqlServer: SqlServerModifier,
+}
+
+func RegisterModifier(driver string, m Modifier) {
+    if driver != "" {
+        modifierMap[driver] = m
     }
-    b := strings.Builder{}
-    b.WriteString("SELECT COUNT(")
-    b.WriteString(countColumn)
-    b.WriteString(") FROM (")
-    b.WriteString(strings.TrimSpace(sql))
-    b.WriteString(") AS __hp_tempCountTl")
-    return b.String()
+}
+
+func SelectModifier(driver string) Modifier {
+    if m, ok := modifierMap[driver]; ok {
+        return m
+    }
+    return modifierMap[DriverDummy]
 }

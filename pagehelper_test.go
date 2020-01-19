@@ -121,7 +121,7 @@ func TestPageHelper2(t *testing.T) {
 }
 
 func TestModifyPage(t *testing.T) {
-    sql := PageModifier("select * from x", &PageInfo{Page: 1, PageSize: 2,})
+    sql := MysqlModifier.Page("select * from x", &PageInfo{Page: 1, PageSize: 2,})
     t.Log(sql)
     if strings.TrimSpace(sql) != `select * from x LIMIT 2, 2` {
         t.Fail()
@@ -129,7 +129,7 @@ func TestModifyPage(t *testing.T) {
 }
 
 func order(sql string, params ...interface{}) (string, []interface{}) {
-    return OrderByModifier(sql, &OrderByInfo{"test", ASC}), params
+    return MysqlModifier.OrderBy(sql, &OrderByInfo{"test", ASC}), params
 }
 
 func TestModifyOrder(t *testing.T) {
@@ -146,7 +146,7 @@ func TestModifyOrder(t *testing.T) {
 
 func TestModifyCount(t *testing.T) {
     t.Run("empty", func(t *testing.T) {
-        sql := CountModifier("select ? from x", "")
+        sql := MysqlModifier.Count("select ? from x", "")
         t.Log(sql)
 
         if strings.TrimSpace(sql) != "SELECT COUNT(0) FROM (select ? from x) AS __hp_tempCountTl" {
@@ -155,25 +155,13 @@ func TestModifyCount(t *testing.T) {
     })
 
     t.Run("test", func(t *testing.T) {
-        sql := CountModifier("select ? from x", "test")
+        sql := MysqlModifier.Count("select ? from x", "test")
         t.Log(sql)
 
         if strings.TrimSpace(sql) != "SELECT COUNT(`test`) FROM (select ? from x) AS __hp_tempCountTl" {
             t.Fail()
         }
     })
-}
-
-func TestChangeModifyCount(t *testing.T) {
-    CountModifier = func(sql, c string) string {
-        return "test " + sql
-    }
-    sql := CountModifier("select ? from x", "")
-    t.Log(sql)
-
-    if strings.TrimSpace(sql) != "test select ? from x" {
-        t.Fail()
-    }
 }
 
 func TestGetTotal(t *testing.T) {
@@ -209,7 +197,7 @@ func TestModifyOrderAndPage(t *testing.T) {
     sql, p := order("select ? from x", "field1")
     t.Log(sql)
 
-    sql = PageModifier(sql, &PageInfo{Page: 1, PageSize: 2,})
+    sql = MysqlModifier.Page(sql, &PageInfo{Page: 1, PageSize: 2,})
 
     t.Log(sql)
     for _, v := range p {
