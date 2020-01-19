@@ -10,6 +10,7 @@ package pagehelper
 
 import (
     "context"
+    "fmt"
 )
 
 type OrderByInfo struct {
@@ -99,4 +100,8 @@ func (p *PageInfo) GetTotalPage() int64 {
     }
 
     return (p.total + int64(p.PageSize) - 1) / int64(p.PageSize)
+}
+
+func (p *PageInfo) String() string {
+    return fmt.Sprintf("pageNum: %d , pageSize: %d , Total: %d , TotalPage: %d", p.GetPageNum(), p.GetPageSize(), p.GetTotal(), p.GetTotalPage())
 }

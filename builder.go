@@ -42,7 +42,7 @@ func (b *builder) PageWithCount(page, pageSize int, countColumn string) *builder
     return b
 }
 
-func (b *builder) Total(countColumn string) *builder {
+func (b *builder) Count(countColumn string) *builder {
     b.page.countColumn = countColumn
     b.page.total = -1
     return b

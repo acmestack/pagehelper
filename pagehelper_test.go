@@ -10,6 +10,7 @@ package pagehelper
 
 import (
     "context"
+    _ "github.com/go-sql-driver/mysql"
     "github.com/xfali/gobatis"
     "github.com/xfali/gobatis/datasource"
     "strings"
@@ -105,8 +106,8 @@ func TestPageHelper2(t *testing.T) {
             Host:     "localhost",
             Port:     3306,
             DBName:   "test",
-            Username: "root",
-            Password: "123",
+            Username: "test",
+            Password: "test",
             Charset:  "utf8",
         })))
     sessMgr := gobatis.NewSessionManager(pFac)
@@ -117,7 +118,35 @@ func TestPageHelper2(t *testing.T) {
     session.SetContext(ctx)
 
     var ret []TestTable
-    session.Select("SELECT * FROM TBL_TEST").Param().Result(&ret)
+    session.Select("SELECT * FROM test_table").Param().Result(&ret)
+
+    t.Log(ret)
+}
+
+func TestPageHelper3(t *testing.T) {
+    pFac := New(gobatis.NewFactory(
+        gobatis.SetMaxConn(100),
+        gobatis.SetMaxIdleConn(50),
+        gobatis.SetDataSource(&datasource.MysqlDataSource{
+            Host:     "localhost",
+            Port:     3306,
+            DBName:   "test",
+            Username: "test",
+            Password: "test",
+            Charset:  "utf8",
+        })))
+    sessMgr := gobatis.NewSessionManager(pFac)
+    session := sessMgr.NewSession()
+    ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+    ctx = C(ctx).Page(1, 2).Count("").ASC("id").Build()
+
+    session.SetContext(ctx)
+
+    var ret []TestTable
+    session.Select("SELECT * FROM test_table").Param().Result(&ret)
+
+    t.Log(ret)
+    t.Log(GetPageInfo(session.GetContext()))
 }
 
 func TestModifyPage(t *testing.T) {
