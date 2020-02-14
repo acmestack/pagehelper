@@ -19,7 +19,7 @@ const (
 )
 
 func TestBuilder(t *testing.T) {
-    ctx := pagehelper.C(context.Background()).Page(1, 3).Order("test", pagehelper.ASC).Build()
+    ctx := pagehelper.C(context.Background()).Page(1, 3).OrderBy("test", pagehelper.ASC).Build()
     ctx, _ = context.WithTimeout(ctx, time.Second)
     p := ctx.Value(pageHelperValue)
     o := ctx.Value(orderHelperValue)
@@ -29,7 +29,7 @@ func TestBuilder(t *testing.T) {
 }
 
 func TestBuilder2(t *testing.T) {
-    ctx := pagehelper.C(context.Background()).PageWithCount(1, 3, "").Order("test", pagehelper.ASC).Build()
+    ctx := pagehelper.C(context.Background()).PageWithCount(1, 3, "").OrderBy("test", pagehelper.ASC).Build()
     ctx = pagehelper.C(ctx).DESC("new_field").Build()
     ctx, _ = context.WithTimeout(ctx, time.Second)
     p := ctx.Value(pageHelperValue)
@@ -40,7 +40,7 @@ func TestBuilder2(t *testing.T) {
 }
 
 func TestBuilder3(t *testing.T) {
-    ctx := pagehelper.C(context.Background()).Page(1, 3).Order("test", pagehelper.ASC).Build()
+    ctx := pagehelper.C(context.Background()).Page(1, 3).OrderBy("test", pagehelper.ASC).Build()
     ctx = pagehelper.C(ctx).DESC("new_field").ASC("new_field2").Count("test").Page(2,100).Build()
     ctx, _ = context.WithTimeout(ctx, time.Second)
     p := ctx.Value(pageHelperValue)

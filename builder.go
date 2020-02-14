@@ -51,7 +51,7 @@ func (b *builder) Count(countColumn string) *builder {
 //手动指定字段和排序
 //field 字段
 //order 排序 [ASC | DESC]
-func (b *builder) Order(field, order string) *builder {
+func (b *builder) OrderBy(field, order string) *builder {
     b.order.Field = field
     b.order.Order = order
     return b
@@ -60,13 +60,13 @@ func (b *builder) Order(field, order string) *builder {
 //升序（默认）
 //field 字段
 func (b *builder) ASC(field string) *builder {
-    return b.Order(field, ASC)
+    return b.OrderBy(field, ASC)
 }
 
 //降序
 //field 字段
 func (b *builder) DESC(field string) *builder {
-    return b.Order(field, DESC)
+    return b.OrderBy(field, DESC)
 }
 
 //获得含分页/排序信息的context
