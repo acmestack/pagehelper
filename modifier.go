@@ -6,33 +6,33 @@
 package pagehelper
 
 const (
-    DriverDummy     = "default"
-    DriverMysql     = "mysql"
-    DriverPostgre   = "postgre"
-    DriverOracle    = "oracle"
-    DriverSqlServer = "sqlserver"
+	DriverDummy     = "default"
+	DriverMysql     = "mysql"
+	DriverPostgre   = "postgre"
+	DriverOracle    = "oracle"
+	DriverSqlServer = "sqlserver"
 )
 
 type Modifier struct {
-    OrderBy func(sql string, p *OrderByInfo) string
-    Page    func(sql string, p *PageInfo) string
-    Count   func(sql, countColumn string) string
+	OrderBy func(sql string, p *OrderByInfo) string
+	Page    func(sql string, p *PageInfo) string
+	Count   func(sql, countColumn string) string
 }
 
 var DummyModifier = Modifier{
-    OrderBy: DummyModifyOrderBy,
-    Page:    DummyModifyPage,
-    Count:   DummyModifyCount,
+	OrderBy: DummyModifyOrderBy,
+	Page:    DummyModifyPage,
+	Count:   DummyModifyCount,
 }
 
 func DummyModifyOrderBy(sql string, p *OrderByInfo) string {
-    return sql
+	return sql
 }
 
 func DummyModifyPage(sql string, p *PageInfo) string {
-    return sql
+	return sql
 }
 
 func DummyModifyCount(sql, countColumn string) string {
-    return sql
+	return sql
 }
