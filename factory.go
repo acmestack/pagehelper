@@ -2,15 +2,15 @@
 // All right reserved.
 // @author xiongfa.li
 // @version V1.0
-// Description: 
+// Description:
 
 package pagehelper
 
 import (
-	"github.com/xfali/gobatis/executor"
-	"github.com/xfali/gobatis/logging"
-	"github.com/xfali/gobatis/session"
-	"github.com/xfali/gobatis/transaction"
+	"github.com/acmestack/gobatis/executor"
+	"github.com/acmestack/gobatis/logging"
+	"github.com/acmestack/gobatis/session"
+	"github.com/acmestack/gobatis/transaction"
 )
 
 type IFactory struct {

@@ -1,5 +1,12 @@
 # pagehelper
 
+[![license card](https://img.shields.io/badge/License-Apache%202.0-brightgreen.svg?label=license)](https://github.com/acmestack/pagehelper/blob/main/LICENSE)
+[![go version](https://img.shields.io/github/go-mod/go-version/acmestack/pagehelper)](#)
+[![go report](https://goreportcard.com/badge/github.com/acmestack/pagehelper)](https://goreportcard.com/report/github.com/acmestack/pagehelper)
+[![codecov report](https://codecov.io/gh/acmestack/pagehelper/branch/main/graph/badge.svg)](https://codecov.io/gh/acmestack/pagehelper)
+[![workflow](https://github.com/acmestack/pagehelper/actions/workflows/go.yml/badge.svg?event=push)](#)
+[![lasted release](https://img.shields.io/github/v/release/acmestack/pagehelper?label=lasted)](https://github.com/acmestack/pagehelper/releases)
+
 ## 介绍
 
 pagehelper是与[gobatis](https://github.com/xfali/gobatis)配套的分页工具
