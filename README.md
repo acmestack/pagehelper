@@ -9,7 +9,7 @@
 
 ## 介绍
 
-pagehelper是与[gobatis](https://github.com/xfali/gobatis)配套的分页工具
+pagehelper是与[gobatis](https://github.com/acmestack/gobatis)配套的分页工具
 
 ## 待完成项
 
@@ -82,7 +82,7 @@ total:          1001
     session.SetContext(ctx).Select("SELECT * FROM TBL_TEST").Param().Result(&ret)
 ```
 *注意：*
-  
+
 由于golang对order by不能使用placeholder的方式，所以存在注入风险，请谨慎使用排序功能，如果使用，则需要自己做防注入的工作。
 
 举例：
